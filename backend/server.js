@@ -1,11 +1,11 @@
+import 'dotenv/config'; 
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { connectDatabase } from './src/config/database.js';
 import uploadRoutes from './src/routes/upload.routes.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
 
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
