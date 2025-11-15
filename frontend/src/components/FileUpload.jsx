@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, CloudUpload, Check, X, AlertCircle, Zap, Tag, Shield, FileText, Bot, Tags } from 'lucide-react';
+import { uploadFile } from '../services/api';
 
 /**
  * FileUpload Component
@@ -103,44 +104,25 @@ const FileUpload = ({ onUploadSuccess }) => {
       validateFile(file);
       setUploading(true);
 
-      // Simulate upload progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(progressInterval);
-            return 100;
-          }
-          return prev + 10;
-        });
-      }, 200);
+      const result = await uploadFile(file, (progress) => {
+      setUploadProgress(progress);
+    });
 
-      // Simulate API response after 2 seconds
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const result = {
-        title: file.name,
-        category: 'Marketing',
-        team: 'Product Marketing',
-        tags: ['Q4 2024', 'Campaign', 'Launch'],
-        summary: 'Marketing document successfully processed and categorized.'
-      };
+    setUploadedFile(result);
 
-      setUploadedFile(result);
+    setTimeout(() => {
+      if (onUploadSuccess) {
+        onUploadSuccess(result);
+      }
+    }, 2000);
 
-      // Small delay for better UX before returning to search view
-      setTimeout(() => {
-        if (onUploadSuccess) {
-          onUploadSuccess(result);
-        }
-      }, 2000);
-
-    } catch (err) {
-      setError(err.message);
-      setUploadProgress(0);
-    } finally {
-      setUploading(false);
-    }
-  };
+  } catch (err) {
+    setError(err.message);
+    setUploadProgress(0);
+  } finally {
+    setUploading(false);
+  }
+};
 
   /**
    * Opens hidden file input programmatically
