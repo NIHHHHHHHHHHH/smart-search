@@ -33,8 +33,7 @@ const Layout = ({ children, view, onViewChange }) => {
 
               {/* App Title */}
               <div>
-                <h1 className="text-xl font-bold text-slate-900">Smart Search</h1>
-                <p className="text-xs text-slate-500">Internal Knowledge Base</p>
+                <h1 className="text-2xl font-bold text-slate-900">Smart Search</h1>
               </div>
             </div>
 

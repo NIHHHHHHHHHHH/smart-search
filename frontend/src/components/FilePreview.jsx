@@ -1,220 +1,206 @@
-import React, { useState, useEffect } from 'react';
-import { X, AlertCircle } from 'lucide-react';
-import { getDocumentById } from '../services/api';
+import React from 'react';
+import { X, FileText, Users, Clipboard, Calendar, Tag } from 'lucide-react';
 
 /**
  * FilePreview Component
  * 
- * A modal component that displays detailed information about a document including
- * metadata, tags, summary, and content preview. Fetches full document data on mount.
+ * Modal that displays document details including:
+ * - Title, category, team, project
+ * - Upload date
+ * - Summary
+ * - Tags
+ * - Download link
  */
 const FilePreview = ({ document, onClose }) => {
-  // State for storing the complete document data
-  const [fullDocument, setFullDocument] = useState(null);
-  
-  // Loading state while fetching document details
-  const [loading, setLoading] = useState(true);
-  
-  // Error state for handling API failures
-  const [error, setError] = useState(null);
+  if (!document) return null;
 
   /**
-   * Effect hook to load full document data when component mounts
-   * or when document ID changes
-   */
-  useEffect(() => {
-    loadFullDocument();
-  }, [document._id]);
-
-  /**
-   * Fetches complete document data from the API
-   * Handles loading states and error scenarios
-   */
-  const loadFullDocument = async () => {
-    try {
-      setLoading(true);
-      const data = await getDocumentById(document._id);
-      setFullDocument(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  /**
-   * Returns appropriate Tailwind color classes based on document category
-   * Includes background, text, and border colors for consistent theming
+   * Returns category-specific colors
    */
   const getCategoryColor = (category) => {
     const colors = {
-      Strategy: 'bg-blue-100 text-blue-700 border-blue-200',
-      Campaign: 'bg-purple-100 text-purple-700 border-purple-200',
-      Research: 'bg-green-100 text-green-700 border-green-200',
-      Creative: 'bg-pink-100 text-pink-700 border-pink-200',
-      Analytics: 'bg-orange-100 text-orange-700 border-orange-200',
-      Other: 'bg-slate-100 text-slate-700 border-slate-200'
+      Strategy: 'bg-blue-100 text-blue-700',
+      Campaign: 'bg-purple-100 text-purple-700',
+      Research: 'bg-green-100 text-green-700',
+      Creative: 'bg-pink-100 text-pink-700',
+      Analytics: 'bg-orange-100 text-orange-700',
+      Other: 'bg-slate-100 text-slate-700'
     };
     return colors[category] || colors.Other;
   };
 
   /**
-   * Converts bytes to human-readable file size format
+   * Handle backdrop click to close modal
    */
-  const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  /**
+   * Format date to readable string
+   */
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
   return (
-    // Modal overlay with centered content
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-        
-        {/* Header section with document title and close button */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 bg-slate-50">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold text-slate-900 truncate">
-              {document.title}
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
+      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-start justify-between">
+          <div className="flex-1 pr-4">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              {document.title || 'Untitled Document'}
             </h2>
-            <p className="text-sm text-slate-500 mt-1">
-              {new Date(document.uploadedAt).toLocaleString()}
-            </p>
+            <div className="flex items-center space-x-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(document.category)}`}>
+                {document.category || 'Other'}
+              </span>
+              <span className="text-sm text-slate-500">
+                {document.fileType?.toUpperCase() || 'FILE'}
+              </span>
+            </div>
           </div>
-          
-          {/* Close button */}
           <button
             onClick={onClose}
-            className="ml-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-all"
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors shrink-0"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 text-slate-500" />
           </button>
         </div>
 
-        {/* Main content area with scrollable content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Loading state with skeleton placeholders */}
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-pulse space-y-4 w-full">
-                <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                <div className="h-4 bg-slate-200 rounded"></div>
-                <div className="h-4 bg-slate-200 rounded w-5/6"></div>
-              </div>
-            </div>
-          ) : error ? (
-            // Error state display
-            <div className="text-center py-12">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
-              <p className="text-red-600">{error}</p>
-            </div>
-          ) : fullDocument ? (
-            // Document details display
-            <div className="space-y-6">
-              
-              {/* Metadata grid showing document properties */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-slate-50 rounded-xl">
-                {/* Category badge */}
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Metadata Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Team */}
+            {document.team && (
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Category</p>
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${getCategoryColor(fullDocument.category)}`}>
-                    {fullDocument.category}
+                  <p className="text-sm text-slate-500">Team</p>
+                  <p className="text-slate-900 font-medium">{document.team}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Project */}
+            {document.project && (
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <Clipboard className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Project</p>
+                  <p className="text-slate-900 font-medium">{document.project}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Upload Date */}
+            {document.uploadedAt && (
+              <div className="flex items-start space-x-3">
+                <div className="p-2 bg-green-50 rounded-lg">
+                  <Calendar className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">Uploaded</p>
+                  <p className="text-slate-900 font-medium">
+                    {formatDate(document.uploadedAt)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* File Type */}
+            <div className="flex items-start space-x-3">
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <FileText className="w-5 h-5 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-slate-500">File Type</p>
+                <p className="text-slate-900 font-medium">
+                  {document.fileType?.toUpperCase() || 'Unknown'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary */}
+          {document.summary && (
+            <div className="bg-slate-50 p-4 rounded-lg">
+              <h3 className="text-sm font-semibold text-slate-700 mb-2">Summary</h3>
+              <p className="text-slate-600 leading-relaxed">{document.summary}</p>
+            </div>
+          )}
+
+          {/* Tags */}
+          {document.tags && document.tags.length > 0 && (
+            <div>
+              <div className="flex items-center space-x-2 mb-3">
+                <Tag className="w-4 h-4 text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-700">Tags</h3>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {document.tags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm"
+                  >
+                    #{tag}
                   </span>
-                </div>
-                
-                {/* Team information */}
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Team</p>
-                  <p className="text-slate-900 font-medium">{fullDocument.team}</p>
-                </div>
-                
-                {/* Project information */}
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Project</p>
-                  <p className="text-slate-900 font-medium">{fullDocument.project}</p>
-                </div>
-                
-                {/* File type */}
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">File Type</p>
-                  <p className="text-slate-900 font-medium uppercase">{fullDocument.fileType}</p>
-                </div>
-                
-                {/* File size (formatted) */}
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">File Size</p>
-                  <p className="text-slate-900 font-medium">{formatFileSize(fullDocument.fileSize)}</p>
-                </div>
-                
-                {/* View count */}
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Views</p>
-                  <p className="text-slate-900 font-medium">{fullDocument.accessCount || 0}</p>
-                </div>
+                ))}
               </div>
-
-              {/* Tags section (if available) */}
-              {fullDocument.tags && fullDocument.tags.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-slate-900 mb-3">Tags</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {fullDocument.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm border border-blue-200"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Document summary section (if available) */}
-              {fullDocument.summary && (
-                <div>
-                  <h3 className="font-semibold text-slate-900 mb-3">Summary</h3>
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <p className="text-slate-700 leading-relaxed">{fullDocument.summary}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Content preview section (if available) */}
-              {/* Shows first 5000 characters of extracted text */}
-              {fullDocument.extractedText && (
-                <div>
-                  <h3 className="font-semibold text-slate-900 mb-3">Content Preview</h3>
-                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl max-h-96 overflow-y-auto">
-                    <pre className="text-sm text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">
-                      {fullDocument.extractedText.substring(0, 5000)}
-                      {fullDocument.extractedText.length > 5000 && '...'}
-                    </pre>
-                  </div>
-                </div>
-              )}
             </div>
-          ) : null}
+          )}
+
+          {/* Key Points */}
+          {document.keyPoints && document.keyPoints.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-3">Key Points</h3>
+              <ul className="space-y-2">
+                {document.keyPoints.map((point, idx) => (
+                  <li key={idx} className="flex items-start space-x-2">
+                    <span className="text-blue-600 font-bold">•</span>
+                    <span className="text-slate-600">{point}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* File Path (for download) */}
+          {document.filePath && (
+            <div className="pt-4 border-t border-slate-200">
+              <a
+                href={`http://localhost:5000${document.filePath}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <FileText className="w-4 h-4" />
+                <span>Download Document</span>
+              </a>
+            </div>
+          )}
         </div>
 
-        {/* Footer with uploader info and action buttons */}
-        <div className="flex items-center justify-between p-6 border-t border-slate-200 bg-slate-50">
-          <div className="text-sm text-slate-500">
-            Uploaded by {fullDocument?.uploadedBy || 'System'}
-          </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition-all font-medium"
-            >
-              Close
-            </button>
-          </div>
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 p-4 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 transition-colors font-medium"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
