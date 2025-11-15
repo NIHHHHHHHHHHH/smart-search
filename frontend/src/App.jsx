@@ -1,74 +1,168 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import SearchBar from './components/SearchBar';
-import SearchResults from './components/SearchResults';
 import FileUpload from './components/FileUpload';
+import SearchResults from './components/SearchResults';
+import Filters from './components/Filters';
+import FilePreview from './components/FilePreview';
+import { searchDocuments, getFilters } from './services/api';
 
 /**
  * App Component
  *
- * Controls:
- *  - Active view: "search" or "upload"
- *  - Search query entered by the user
- *  - Real-time search results
- *  - Recently uploaded document (for UX feedback)
+ * Responsibilities:
+ *  - Manages current view: "search" or "upload"
+ *  - Executes search queries and displays results
+ *  - Loads and applies filters (category, team, project, fileType)
+ *  - Handles document preview modal
+ *  - Tracks last uploaded document for user feedback
  *
- * Commit 8 Functionality:
- *  - Integrates SearchBar + SearchResults
- *  - Supports real-time search via SearchBar interactions
+ * This file now includes all components for:
+ *  - Commit 8: SearchBar + SearchResults
+ *  - Commit 9: Filters + FilePreview + UI Enhancements
  */
 function App() {
-  /** Controls which main section is displayed */
-  const [view, setView] = useState("search");
+  /** Controls which screen is displayed */
+  const [view, setView] = useState('search');
 
-  /** Stores the user's current search query */
-  const [searchQuery, setSearchQuery] = useState("");
+  /** Search query entered by the user */
+  const [searchQuery, setSearchQuery] = useState('');
 
-  /** Holds the list of documents returned from backend search */
+  /** List of documents returned from backend search */
   const [searchResults, setSearchResults] = useState([]);
 
-  /** Stores latest uploaded document for display purposes */
+  /** Indicates whether search API is loading */
+  const [loading, setLoading] = useState(false);
+
+  /** Currently selected filter values */
+  const [filters, setFilters] = useState({
+    category: '',
+    team: '',
+    project: '',
+    fileType: ''
+  });
+
+  /** Populates dropdown lists for filters */
+  const [availableFilters, setAvailableFilters] = useState({
+    categories: [],
+    teams: [],
+    projects: [],
+    fileTypes: []
+  });
+
+  /** Stores last uploaded document metadata */
   const [lastUploaded, setLastUploaded] = useState(null);
 
+  /** Stores currently selected document for preview modal */
+  const [selectedDocument, setSelectedDocument] = useState(null);
+
+  /** Controls visibility of the file preview modal */
+  const [showPreview, setShowPreview] = useState(false);
+
   /**
-   * handleSearch
-   *
-   * Called when SearchBar sends new input.
-   * - Updates query
-   * - Calls backend via SearchBar (SearchBar handles API)
-   * - Updates search results inside SearchResults
+   * Load available filter values on initial render
    */
-  const handleSearch = (query, results) => {
-    setSearchQuery(query);
-    setSearchResults(results || []);
+  useEffect(() => {
+    loadFilters();
+  }, []);
+
+  /**
+   * Loads all filter lists from backend
+   */
+  const loadFilters = async () => {
+    try {
+      const data = await getFilters();
+      setAvailableFilters(data);
+    } catch (error) {
+      console.error('Failed to load filters:', error);
+    }
   };
 
   /**
-   * handleUploadSuccess
-   *
-   * After upload:
-   * - Save uploaded file metadata
-   * - Redirect user to search interface
+   * Executes live search whenever user types
+   */
+  const handleSearch = async (query) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setSearchQuery('');
+      return;
+    }
+
+    setLoading(true);
+    setSearchQuery(query);
+
+    try {
+      const results = await searchDocuments(query, filters);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search failed:', error);
+      setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Applies new filter values and refreshes search results
+   */
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
+
+    // Re-run search if input exists
+    if (searchQuery.trim()) {
+      handleSearch(searchQuery);
+    }
+  };
+
+  /**
+   * Opens preview modal when a document card is clicked
+   */
+  const handleDocumentClick = (doc) => {
+    setSelectedDocument(doc);
+    setShowPreview(true);
+  };
+
+  /**
+   * Handles file upload completion:
+   * - Updates last uploaded file info
+   * - Refreshes filter lists
+   * - Redirects user back to search
    */
   const handleUploadSuccess = (uploadedFile) => {
     setLastUploaded(uploadedFile);
-    setView("search");
+    loadFilters();
+    setView('search');
   };
 
   return (
     <Layout view={view} onViewChange={setView}>
-      {view === "search" ? (
+      {view === 'search' ? (
         <div className="space-y-6">
-          {/* Search input component with real-time search */}
-          <SearchBar onSearch={handleSearch} />
 
-          {/* Display live search results */}
-          <SearchResults
-            query={searchQuery}
-            results={searchResults}
+          {/* Search bar with real-time suggestion handling */}
+          <SearchBar 
+            onSearch={handleSearch}
+            loading={loading}
           />
 
-          {/* Optional message about last uploaded file */}
+          {/* Filters appear only when search or filters are active */}
+          {(searchQuery || Object.values(filters).some(value => value)) && (
+            <Filters
+              filters={filters}
+              availableFilters={availableFilters}
+              onFilterChange={handleFilterChange}
+            />
+          )}
+
+          {/* Document search results */}
+          <SearchResults
+            results={searchResults}
+            loading={loading}
+            query={searchQuery}
+            onDocumentClick={handleDocumentClick}
+          />
+
+          {/* Optional info about last uploaded file */}
           {lastUploaded && !searchQuery && (
             <p className="text-green-600 font-medium text-center mt-4">
               ✅ Last uploaded:{" "}
@@ -79,6 +173,14 @@ function App() {
       ) : (
         /* File upload screen */
         <FileUpload onUploadSuccess={handleUploadSuccess} />
+      )}
+
+      {/* File preview modal */}
+      {showPreview && selectedDocument && (
+        <FilePreview
+          document={selectedDocument}
+          onClose={() => setShowPreview(false)}
+        />
       )}
     </Layout>
   );
