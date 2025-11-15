@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { connectDatabase } from './src/config/database.js';
+import uploadRoutes from './src/routes/upload.routes.js';
+import { errorHandler } from './src/middleware/error.middleware.js';
 
 dotenv.config();
 
@@ -35,6 +37,12 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// Routes
+app.use('/api/upload', uploadRoutes);
+
+// Error handling
+app.use(errorHandler);
 
 /**
  * Start Server
