@@ -1,16 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
+import Layout from './components/Layout';
 
+/**
+ * App Component 
+ * This component manages the global state for the active view
+ * (Search or Upload) and passes it down to the Layout component.
+ *
+ * Currently, this is the entry point of the UI. As the project grows,
+ * the view state will control which page content is rendered.
+ */
 function App() {
+  // Tracks which main page is active: 'search' or 'upload'
+  const [view, setView] = useState('search');
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="text-center">
-        <div className="mb-8">
-          <h1 className="text-5xl font-bold text-slate-900 mb-4">
-            Smart Internal Search
-          </h1>
-        </div>
+    // Layout wraps all main content including header, footer, and navigation
+    <Layout view={view} onViewChange={setView}>
+      {/* Placeholder UI — actual Search/Upload components will be added later */}
+      <div className="text-gray-500 text-center py-10">
+        Select a view to continue.
       </div>
-    </div>
+    </Layout>
   );
 }
 
