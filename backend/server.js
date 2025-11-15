@@ -2,13 +2,21 @@ import 'dotenv/config';
 
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import { connectDatabase } from './src/config/database.js';
 import uploadRoutes from './src/routes/upload.routes.js';
+import searchRoutes from './src/routes/search.routes.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
 
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
 
 /**
  * Global Middleware
@@ -23,6 +31,7 @@ app.use(cors({
 }));
 app.use(express.json());                                       // Parse JSON bodies
 app.use(express.urlencoded({ extended: true }));               // Parse form data
+app.use(limiter);
 
 /**
  * Health Check Endpoint
@@ -40,6 +49,7 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/upload', uploadRoutes);
+app.use('/api/search', searchRoutes);
 
 // Error handling
 app.use(errorHandler);
