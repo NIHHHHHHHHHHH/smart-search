@@ -1,25 +1,59 @@
 import React, { useState } from 'react';
 import Layout from './components/Layout';
+import FileUpload from './components/FileUpload';
 
 /**
  * App Component 
- * This component manages the global state for the active view
- * (Search or Upload) and passes it down to the Layout component.
+ * Manages:
+ *  - Active view: "search" or "upload"
+ *  - Tracking the most recently uploaded file
  *
- * Currently, this is the entry point of the UI. As the project grows,
- * the view state will control which page content is rendered.
+ * Renders:
+ *  - Search placeholder screen (until search page is implemented)
+ *  - FileUpload component when user switches to upload view
+ *
+ * Acts as the controller between navigation and content rendering.
  */
 function App() {
-  // Tracks which main page is active: 'search' or 'upload'
-  const [view, setView] = useState('search');
+  // Controls which main section is displayed
+  const [view, setView] = useState("search");
+
+  // Stores the most recently uploaded file returned by backend
+  const [lastUploaded, setLastUploaded] = useState(null);
+
+  /**
+   * handleUploadSuccess
+
+   * Called after a file is successfully uploaded.
+   * - Stores the uploaded file metadata
+   * - Redirects user back to the search view
+   */
+  const handleUploadSuccess = (uploadedFile) => {
+    setLastUploaded(uploadedFile);
+    setView("search");
+  };
 
   return (
-    // Layout wraps all main content including header, footer, and navigation
     <Layout view={view} onViewChange={setView}>
-      {/* Placeholder UI — actual Search/Upload components will be added later */}
-      <div className="text-gray-500 text-center py-10">
-        Select a view to continue.
-      </div>
+      {/* Conditionally render search interface or upload interface */}
+      {view === "search" ? (
+        <div className="text-center py-20 text-slate-500">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">Smart Search</h2>
+          <p className="text-slate-600">
+            The search interface will appear here .
+          </p>
+
+          {/* Show the name of the last uploaded file for user feedback */}
+          {lastUploaded && (
+            <p className="mt-6 text-green-600 font-medium">
+              ✅ Last uploaded: <span className="text-slate-900">{lastUploaded.title}</span>
+            </p>
+          )}
+        </div>
+      ) : (
+        // Upload screen
+        <FileUpload onUploadSuccess={handleUploadSuccess} />
+      )}
     </Layout>
   );
 }
