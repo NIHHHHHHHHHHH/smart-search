@@ -1,32 +1,54 @@
 import React, { useState } from 'react';
 import Layout from './components/Layout';
+import SearchBar from './components/SearchBar';
+import SearchResults from './components/SearchResults';
 import FileUpload from './components/FileUpload';
 
 /**
- * App Component 
- * Manages:
+ * App Component
+ *
+ * Controls:
  *  - Active view: "search" or "upload"
- *  - Tracking the most recently uploaded file
+ *  - Search query entered by the user
+ *  - Real-time search results
+ *  - Recently uploaded document (for UX feedback)
  *
- * Renders:
- *  - Search placeholder screen (until search page is implemented)
- *  - FileUpload component when user switches to upload view
- *
- * Acts as the controller between navigation and content rendering.
+ * Commit 8 Functionality:
+ *  - Integrates SearchBar + SearchResults
+ *  - Supports real-time search via SearchBar interactions
  */
 function App() {
-  // Controls which main section is displayed
+  /** Controls which main section is displayed */
   const [view, setView] = useState("search");
 
-  // Stores the most recently uploaded file returned by backend
+  /** Stores the user's current search query */
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /** Holds the list of documents returned from backend search */
+  const [searchResults, setSearchResults] = useState([]);
+
+  /** Stores latest uploaded document for display purposes */
   const [lastUploaded, setLastUploaded] = useState(null);
 
   /**
-   * handleUploadSuccess
+   * handleSearch
+   *
+   * Called when SearchBar sends new input.
+   * - Updates query
+   * - Calls backend via SearchBar (SearchBar handles API)
+   * - Updates search results inside SearchResults
+   */
+  const handleSearch = (query, results) => {
+    setSearchQuery(query);
+    setSearchResults(results || []);
+  };
 
-   * Called after a file is successfully uploaded.
-   * - Stores the uploaded file metadata
-   * - Redirects user back to the search view
+  /**
+   * handleUploadSuccess
+   *
+   * After upload:
+   * - Save uploaded file metadata
+   * - Redirect user to search interface
    */
   const handleUploadSuccess = (uploadedFile) => {
     setLastUploaded(uploadedFile);
@@ -35,23 +57,27 @@ function App() {
 
   return (
     <Layout view={view} onViewChange={setView}>
-      {/* Conditionally render search interface or upload interface */}
       {view === "search" ? (
-        <div className="text-center py-20 text-slate-500">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">Smart Search</h2>
-          <p className="text-slate-600">
-            The search interface will appear here .
-          </p>
+        <div className="space-y-6">
+          {/* Search input component with real-time search */}
+          <SearchBar onSearch={handleSearch} />
 
-          {/* Show the name of the last uploaded file for user feedback */}
-          {lastUploaded && (
-            <p className="mt-6 text-green-600 font-medium">
-              ✅ Last uploaded: <span className="text-slate-900">{lastUploaded.title}</span>
+          {/* Display live search results */}
+          <SearchResults
+            query={searchQuery}
+            results={searchResults}
+          />
+
+          {/* Optional message about last uploaded file */}
+          {lastUploaded && !searchQuery && (
+            <p className="text-green-600 font-medium text-center mt-4">
+              ✅ Last uploaded:{" "}
+              <span className="text-slate-900">{lastUploaded.title}</span>
             </p>
           )}
         </div>
       ) : (
-        // Upload screen
+        /* File upload screen */
         <FileUpload onUploadSuccess={handleUploadSuccess} />
       )}
     </Layout>
