@@ -16,6 +16,9 @@ import mongoose from 'mongoose';
 
 const app = express();
 
+// Trust proxy - required for Vercel
+app.set('trust proxy', 1);
+
 // Import routes and middleware with error handling
 let uploadRoutes, searchRoutes, errorHandler, connectDatabase;
 
@@ -63,13 +66,20 @@ if (connectDatabase) {
     });
 }
 
-// Rate limiting
+// Rate limiting with proper keyGenerator for Vercel
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
+  // Custom key generator for Vercel (uses x-forwarded-for or x-real-ip)
+  keyGenerator: (req) => {
+    return req.headers['x-forwarded-for']?.split(',')[0].trim() || 
+           req.headers['x-real-ip'] || 
+           req.ip || 
+           'unknown';
+  }
 });
 
 /**
@@ -151,7 +161,7 @@ if (searchRoutes) {
   app.use('/api/search', searchRoutes);
 }
 
-// 404 handler for unmatched routes - FIXED
+// 404 handler for unmatched routes
 app.use((req, res, next) => {
   res.status(404).json({
     status: 'error',
@@ -168,7 +178,6 @@ if (errorHandler) {
 
 // Export the Express app for Vercel
 export default app;
-
 
 
 // import 'dotenv/config'; 
