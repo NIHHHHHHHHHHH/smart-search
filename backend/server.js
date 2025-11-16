@@ -47,15 +47,19 @@ try {
 
 // Initialize database connection
 let dbConnected = false;
+let dbError = null;
+
 if (connectDatabase) {
   connectDatabase()
     .then(() => {
       dbConnected = true;
+      dbError = null;
       console.log('✅ Database connected');
     })
     .catch(err => {
-      console.error('❌ Database connection failed:', err.message);
+      console.error('❌ Database connection failed:', err);
       dbConnected = false;
+      dbError = err.message;
     });
 }
 
@@ -108,13 +112,18 @@ app.get('/api/health', (req, res) => {
     ] || 'unknown';
 
     res.json({ 
-      status: 'success',
+      status: dbConnected ? 'success' : 'degraded',
       message: 'Backend server is running (Vercel Serverless)',
-      database: dbState,
-      dbConnected: dbConnected,
+      database: {
+        state: dbState,
+        connected: dbConnected,
+        error: dbError
+      },
       environment: process.env.NODE_ENV || 'development',
-      mongoUri: process.env.MONGODB_URI ? 'configured' : 'missing',
-      geminiKey: process.env.GEMINI_API_KEY ? 'configured' : 'missing',
+      config: {
+        mongoUri: process.env.MONGODB_URI ? 'configured' : '❌ MISSING',
+        geminiKey: process.env.GEMINI_API_KEY ? 'configured' : '❌ MISSING',
+      },
       modulesLoaded: {
         database: !!connectDatabase,
         upload: !!uploadRoutes,
