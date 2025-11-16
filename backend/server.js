@@ -1,55 +1,73 @@
-
 import 'dotenv/config'; 
 
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-// NOTE:  keep connectDatabase imported, but it will be called once per Serverless Function invocation.
-// In a true serverless environment,  might consider lazy loading the database connection
-// inside a route handler or service function to optimize cold start. For now, we'll leave it here.
+import mongoose from 'mongoose';
 import { connectDatabase } from './src/config/database.js'; 
 import uploadRoutes from './src/routes/upload.routes.js';
 import searchRoutes from './src/routes/search.routes.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
 
-
 const app = express();
-// PORT definition is removed as Vercel manages the listener.
 
-// Initialize database connection immediately upon function boot
-// The connection can be cached across invocations in a serverless environment.
+// Initialize database on cold start (connection will be cached)
 connectDatabase().catch(err => {
-  console.error('Initial MongoDB Connection failed:', err);
+  console.error('❌ Initial MongoDB Connection failed:', err);
 });
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 /**
  * Global Middleware
  */
 app.use(cors({
-  // Vercel deployment will allow all origins by default when deployed to a domain, 
-  // but setting the origin here is a good practice for development. 
-  // Vercel also automatically handles CORS headers on its serverless functions.
   origin: process.env.FRONTEND_URL || '*', 
   credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(limiter);
 
 /**
+ * API Root Endpoint
+ */
+app.get('/api', (req, res) => {
+  res.json({ 
+    status: 'success',
+    message: 'Smart Search Tool API',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      upload: '/api/upload',
+      search: '/api/search',
+      filters: '/api/search/filters',
+      stats: '/api/search/stats'
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
  * Health Check Endpoint
- * Vercel is configured to route /api/* to this file.
  */
 app.get('/api/health', (req, res) => {
+  const dbState = ['disconnected', 'connected', 'connecting', 'disconnecting'][
+    mongoose.connection.readyState
+  ] || 'unknown';
+
   res.json({ 
-    status: 'OK',
+    status: 'success',
     message: 'Backend server is running (Vercel Serverless)',
+    database: dbState,
+    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString()
   });
 });
@@ -58,20 +76,21 @@ app.get('/api/health', (req, res) => {
 app.use('/api/upload', uploadRoutes);
 app.use('/api/search', searchRoutes);
 
-// Error handling
+// 404 handler for API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    status: 'error',
+    message: 'API endpoint not found',
+    path: req.path,
+    method: req.method
+  });
+});
+
+// Error handling middleware (must be last)
 app.use(errorHandler);
 
-// IMPORTANT:  export the app instance instead of calling app.listen()
-// Vercel will wrap this Express app into a serverless function handler.
+// Export the Express app for Vercel
 export default app;
-// Removed the startServer function
-
-
-
-
-
-
-
 
 
 
