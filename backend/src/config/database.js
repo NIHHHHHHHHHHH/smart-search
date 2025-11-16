@@ -85,11 +85,14 @@ const createIndexes = async () => {
     // Retrieve existing registered 'Document' model
     const Document = mongoose.model('Document');
 
-    // Check if indexes already exist
+    // Check if indexes already exist - FIXED
     const existingIndexes = await Document.collection.getIndexes();
-    const hasTextIndex = Object.keys(existingIndexes).some(key => 
-      existingIndexes[key].some(index => index[0] === '_fts')
-    );
+    
+    // Check if any index has the text type (_fts field indicates a text index)
+    const hasTextIndex = Object.values(existingIndexes).some(index => {
+      // index is an object like { v: 2, key: { _fts: 'text', ... } }
+      return index.key && index.key._fts === 'text';
+    });
 
     if (hasTextIndex) {
       console.log('✅ Text indexes already exist');
@@ -124,8 +127,6 @@ export const disconnectDatabase = async () => {
     console.log('🔌 MongoDB disconnected');
   }
 };
-
-
 
 
 

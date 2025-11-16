@@ -14,3 +14,9 @@ backend/dist/
 .vscode/
 .idea/
 .vercel
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Keep /tmp clean
+/tmp

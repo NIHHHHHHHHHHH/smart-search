@@ -1,25 +1,68 @@
 import 'dotenv/config'; 
 
+// Global error handlers
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+});
+
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
-import { connectDatabase } from './src/config/database.js'; 
-import uploadRoutes from './src/routes/upload.routes.js';
-import searchRoutes from './src/routes/search.routes.js';
-import { errorHandler } from './src/middleware/error.middleware.js';
 
 const app = express();
 
-// Initialize database on cold start (connection will be cached)
-connectDatabase().catch(err => {
-  console.error('❌ Initial MongoDB Connection failed:', err);
-});
+// Import routes and middleware with error handling
+let uploadRoutes, searchRoutes, errorHandler, connectDatabase;
+
+try {
+  const dbModule = await import('./src/config/database.js');
+  connectDatabase = dbModule.connectDatabase;
+  
+  const uploadModule = await import('./src/routes/upload.routes.js');
+  uploadRoutes = uploadModule.default;
+  
+  const searchModule = await import('./src/routes/search.routes.js');
+  searchRoutes = searchModule.default;
+  
+  const errorModule = await import('./src/middleware/error.middleware.js');
+  errorHandler = errorModule.errorHandler;
+  
+  console.log('✅ All modules loaded successfully');
+} catch (error) {
+  console.error('❌ Error loading modules:', error);
+  // Create fallback error handler
+  errorHandler = (err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({ 
+      status: 'error', 
+      message: err.message || 'Internal server error' 
+    });
+  };
+}
+
+// Initialize database connection
+let dbConnected = false;
+if (connectDatabase) {
+  connectDatabase()
+    .then(() => {
+      dbConnected = true;
+      console.log('✅ Database connected');
+    })
+    .catch(err => {
+      console.error('❌ Database connection failed:', err.message);
+      dbConnected = false;
+    });
+}
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
@@ -59,22 +102,45 @@ app.get('/api', (req, res) => {
  * Health Check Endpoint
  */
 app.get('/api/health', (req, res) => {
-  const dbState = ['disconnected', 'connected', 'connecting', 'disconnecting'][
-    mongoose.connection.readyState
-  ] || 'unknown';
+  try {
+    const dbState = ['disconnected', 'connected', 'connecting', 'disconnecting'][
+      mongoose.connection.readyState
+    ] || 'unknown';
 
-  res.json({ 
-    status: 'success',
-    message: 'Backend server is running (Vercel Serverless)',
-    database: dbState,
-    environment: process.env.NODE_ENV || 'development',
-    timestamp: new Date().toISOString()
-  });
+    res.json({ 
+      status: 'success',
+      message: 'Backend server is running (Vercel Serverless)',
+      database: dbState,
+      dbConnected: dbConnected,
+      environment: process.env.NODE_ENV || 'development',
+      mongoUri: process.env.MONGODB_URI ? 'configured' : 'missing',
+      geminiKey: process.env.GEMINI_API_KEY ? 'configured' : 'missing',
+      modulesLoaded: {
+        database: !!connectDatabase,
+        upload: !!uploadRoutes,
+        search: !!searchRoutes,
+        errorHandler: !!errorHandler
+      },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Health check error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
 });
 
-// Routes
-app.use('/api/upload', uploadRoutes);
-app.use('/api/search', searchRoutes);
+// Routes - only add if they loaded successfully
+if (uploadRoutes) {
+  app.use('/api/upload', uploadRoutes);
+}
+
+if (searchRoutes) {
+  app.use('/api/search', searchRoutes);
+}
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
@@ -87,11 +153,12 @@ app.use('/api/*', (req, res) => {
 });
 
 // Error handling middleware (must be last)
-app.use(errorHandler);
+if (errorHandler) {
+  app.use(errorHandler);
+}
 
 // Export the Express app for Vercel
 export default app;
-
 
 
 
