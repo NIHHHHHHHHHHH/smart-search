@@ -151,11 +151,11 @@ if (searchRoutes) {
   app.use('/api/search', searchRoutes);
 }
 
-// 404 handler for API routes
-app.use('/api/*', (req, res) => {
+// 404 handler for unmatched routes - FIXED
+app.use((req, res, next) => {
   res.status(404).json({
     status: 'error',
-    message: 'API endpoint not found',
+    message: 'Endpoint not found',
     path: req.path,
     method: req.method
   });
@@ -168,7 +168,6 @@ if (errorHandler) {
 
 // Export the Express app for Vercel
 export default app;
-
 
 
 
