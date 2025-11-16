@@ -2,7 +2,7 @@
 
 > An AI-powered document search system for marketing teams with intelligent categorization, semantic search, and instant retrieval.
 
-**Built for CodeNation Hiring Challenge 2024**
+
 
 ---
 
