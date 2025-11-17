@@ -1,5 +1,3 @@
-
-
 import multer from 'multer';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import cloudinary from '../config/cloudinary.js';
@@ -11,17 +9,20 @@ import path from 'path';
  */
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
-  params: {
-    folder: 'smart-search-documents', // Cloudinary folder name
-    allowed_formats: ['pdf', 'docx', 'doc', 'txt', 'md'],
-    resource_type: 'raw', // Important: 'raw' for non-image files
-    public_id: (req, file) => {
-      // Generate unique filename
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const ext = path.extname(file.originalname);
-      const name = path.basename(file.originalname, ext);
-      return `${name}-${uniqueSuffix}`;
-    }
+  params: async (req, file) => {
+    // Generate unique filename
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    const name = path.basename(file.originalname, ext);
+    
+    return {
+      folder: 'smart-search-documents',
+      resource_type: 'raw', // For non-image files
+      public_id: `${name}-${uniqueSuffix}`,
+      // CRITICAL: Don't use allowed_formats with resource_type: 'raw'
+      // Cloudinary's allowed_formats is stricter for raw files
+      // We'll handle validation in fileFilter instead
+    };
   }
 });
 
@@ -30,9 +31,19 @@ const storage = new CloudinaryStorage({
  */
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['.pdf', '.docx', '.doc', '.txt', '.md'];
+  const allowedMimeTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword',
+    'text/plain',
+    'text/markdown'
+  ];
+  
   const ext = path.extname(file.originalname).toLowerCase();
+  const mimeType = file.mimetype;
 
-  if (allowedTypes.includes(ext)) {
+  // Check both extension and MIME type
+  if (allowedTypes.includes(ext) || allowedMimeTypes.includes(mimeType)) {
     cb(null, true);
   } else {
     cb(
@@ -54,88 +65,57 @@ export const upload = multer({
 });
 
 
-
 // import multer from 'multer';
+// import { CloudinaryStorage } from 'multer-storage-cloudinary';
+// import cloudinary from '../config/cloudinary.js';
 // import path from 'path';
-// import { fileURLToPath } from 'url';
-// import { dirname } from 'path';
-// import fs from 'fs';
-
-// // Resolve __dirname for ES modules
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename);
-
-// // Path for storing uploaded files
-// const uploadsDir = path.join(__dirname, '../../uploads');
 
 // /**
-//  * Ensure that the uploads directory exists.
-//  * If not present, create it recursively.
-//  * This prevents Multer from failing due to missing directories.
+//  * Cloudinary Storage Configuration
+//  * Files are uploaded directly to Cloudinary cloud storage
 //  */
-// if (!fs.existsSync(uploadsDir)) {
-//   fs.mkdirSync(uploadsDir, { recursive: true });
-// }
-
-// /**
-//  * ---------------------------------------------------------
-//  * Multer Storage Engine Configuration
-//  * - Saves files to disk
-//  * - Generates unique filenames to avoid overwriting
-//  * ---------------------------------------------------------
-//  */
-// const storage = multer.diskStorage({
-//   // Directory where uploaded files will be stored
-//   destination: (req, file, cb) => {
-//     cb(null, uploadsDir);
-//   },
-
-//   // Custom filename generator: originalName + timestamp + random number
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-
-//     // Extract extension and base name
-//     const ext = path.extname(file.originalname);
-//     const name = path.basename(file.originalname, ext);
-
-//     cb(null, `${name}-${uniqueSuffix}${ext}`);
+// const storage = new CloudinaryStorage({
+//   cloudinary: cloudinary,
+//   params: {
+//     folder: 'smart-search-documents', // Cloudinary folder name
+//     allowed_formats: ['pdf', 'docx', 'doc', 'txt', 'md'],
+//     resource_type: 'raw', // Important: 'raw' for non-image files
+//     public_id: (req, file) => {
+//       // Generate unique filename
+//       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+//       const ext = path.extname(file.originalname);
+//       const name = path.basename(file.originalname, ext);
+//       return `${name}-${uniqueSuffix}`;
+//     }
 //   }
 // });
 
 // /**
-//  * ---------------------------------------------------------
 //  * File Filter (Whitelist)
-//  * Restricts upload to allowed file types only
-//  * ---------------------------------------------------------
 //  */
 // const fileFilter = (req, file, cb) => {
 //   const allowedTypes = ['.pdf', '.docx', '.doc', '.txt', '.md'];
 //   const ext = path.extname(file.originalname).toLowerCase();
 
-//   // Validate extension
 //   if (allowedTypes.includes(ext)) {
-//     cb(null, true); // Accept file
+//     cb(null, true);
 //   } else {
 //     cb(
 //       new Error(`Invalid file type. Allowed: ${allowedTypes.join(', ')}`),
 //       false
-//     ); // Reject file
+//     );
 //   }
 // };
 
 // /**
-//  * ---------------------------------------------------------
-//  * Multer Instance Configuration
-//  * Includes:
-//  * - Storage engine
-//  * - File filtering
-//  * - Maximum file size (10MB)
-//  * ---------------------------------------------------------
+//  * Multer Instance with Cloudinary Storage
 //  */
 // export const upload = multer({
 //   storage,
 //   fileFilter,
 //   limits: {
-//     fileSize: 10 * 1024 * 1024, // 10MB max size
+//     fileSize: 10 * 1024 * 1024, // 10MB
 //   }
 // });
+
+
