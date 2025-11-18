@@ -7,13 +7,6 @@ Live Demo: https://smart-search-m7v6-frontend.vercel.app/
 
 ---
 
-## 🎯 Problem Statement
-
-Marketing teams generate massive amounts of documents, but finding the right file becomes challenging as content becomes scattered, leading to wasted time and inconsistent messaging.
-
-**Solution**: A smart internal search tool that indexes marketing documents, delivers fast and relevant results, and helps teams find information instantly.
-
----
 
 ## ✨ Key Features
 
