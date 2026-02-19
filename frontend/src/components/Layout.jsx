@@ -1,92 +1,75 @@
 import React from 'react';
 import { Search, Upload, FileSearch } from 'lucide-react';
+import UserMenu from './UserMenu';
 
 /**
  * Layout Component
- * This component provides the primary page structure used
- * across the application. It includes:
- *  - Header with branding and navigation
- *  - Main content slot (children)
- *  - Footer section
- *
- * Props:
- *  - children: JSX content for the active page (Search / Upload)
- *  - view: current active view ('search' or 'upload')
- *  - onViewChange: function to update the active view
+ * 
+ * Main app shell with header, navigation, and content area
+ * UPDATED: Now includes UserMenu in header
  */
 const Layout = ({ children, view, onViewChange }) => {
   return (
-    // App background container with soft gradient
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100">
-
-      {/* Sticky header: stays visible while scrolling */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-
-            {/* Logo + Title Section */}
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo/Brand */}
             <div className="flex items-center space-x-3">
-              {/* Gradient icon container */}
-              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
                 <FileSearch className="w-6 h-6 text-white" />
               </div>
-
-              {/* App Title */}
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Smart Search</h1>
+                <h1 className="text-xl font-bold text-slate-900">Smart Search</h1>
+                <p className="text-xs text-slate-500">AI-Powered Document Search</p>
               </div>
             </div>
 
-            {/* Navigation Buttons: Search / Upload */}
-            <nav className="flex space-x-6">
-              {/* Search Tab Button */}
-              <button
-                onClick={() => onViewChange('search')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  view === 'search'
-                    ? 'bg-blue-600 text-white shadow-md' // Active state
-                    : 'text-slate-600 hover:bg-slate-100' // Inactive state
-                }`}
-              >
-                <span className="flex items-center space-x-2">
-                  <Search className="w-5 h-5" />
-                  <span>Search</span>
-                </span>
-              </button>
+            {/* Navigation + User Menu */}
+            <div className="flex items-center space-x-4">
+              {/* Navigation Tabs */}
+              <nav className="flex space-x-2 bg-slate-100 rounded-lg p-1">
+                <button
+                  onClick={() => onViewChange('search')}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                    view === 'search'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Search className="w-4 h-4" />
+                  <span className="font-medium">Search</span>
+                </button>
 
-              {/* Upload Tab Button */}
-              <button
-                onClick={() => onViewChange('upload')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  view === 'upload'
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <span className="flex items-center space-x-2">
-                  <Upload className="w-5 h-5" />
-                  <span>Upload</span>
-                </span>
-              </button>
-            </nav>
+                <button
+                  onClick={() => onViewChange('upload')}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
+                    view === 'upload'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  <span className="font-medium">Upload</span>
+                </button>
+              </nav>
+
+              {/* User Menu */}
+              <UserMenu />
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Main page content (dynamic pages injected as children) */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
         {children}
       </main>
 
-      {/* Footer Section */}
-      <footer className="bg-white border-t border-slate-200 mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-slate-500">
-              © 2024 Smart Search Tool
-            </p>
-          </div>
-        </div>
+      {/* Footer */}
+      <footer className="mt-auto py-6 text-center text-slate-500 text-sm">
+        <p>&copy; 2024 Smart Search. Powered by AI.</p>
       </footer>
     </div>
   );

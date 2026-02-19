@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AuthPage from './components/Auth/AuthPage';
 import Layout from './components/Layout';
 import SearchBar from './components/SearchBar';
 import FileUpload from './components/FileUpload';
@@ -8,11 +10,12 @@ import FilePreview from './components/FilePreview';
 import { searchDocuments, getFilters } from './services/api';
 
 /**
- * App Component
- *
- * UPDATED: Now loads all documents on mount (Browse mode by default)
+ * Main App Component - Wrapped with Auth
  */
-function App() {
+function AppContent() {
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  
+  // ✅ ALL HOOKS MUST BE AT THE TOP - BEFORE ANY RETURNS
   const [view, setView] = useState('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -34,20 +37,22 @@ function App() {
   const [showPreview, setShowPreview] = useState(false);
 
   /**
-   * NEW: Load all documents on mount (Browse mode)
+   * Load all documents on mount (Browse mode)
+   * ✅ useEffect MUST be before any conditional returns
    */
   useEffect(() => {
-    loadFilters();
-    loadAllDocuments(); // Auto-load documents on startup
-  }, []);
+    if (isAuthenticated) {
+      loadFilters();
+      loadAllDocuments();
+    }
+  }, [isAuthenticated]);
 
   /**
-   * NEW: Load all documents (Browse mode)
+   * Load all documents (Browse mode)
    */
   const loadAllDocuments = async () => {
     setLoading(true);
     try {
-      // Empty query triggers browse mode in backend
       const results = await searchDocuments('', {});
       setSearchResults(results);
       setSearchQuery('');
@@ -72,7 +77,7 @@ function App() {
   };
 
   /**
-   * UPDATED: Search now supports empty queries (Browse mode)
+   * Search with support for empty queries (Browse mode)
    */
   const handleSearch = async (query) => {
     setLoading(true);
@@ -94,8 +99,6 @@ function App() {
    */
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
-    
-    // Refresh with current query (empty = browse mode)
     handleSearch(searchQuery);
   };
 
@@ -108,28 +111,48 @@ function App() {
   };
 
   /**
-   * UPDATED: After upload, reload all documents to show the new one
+   * After upload, reload all documents
    */
   const handleUploadSuccess = (uploadedFile) => {
     setLastUploaded(uploadedFile);
     loadFilters();
     setView('search');
-    loadAllDocuments(); // Reload to show newly uploaded document
+    loadAllDocuments();
   };
 
+  // ✅ NOW conditional returns are AFTER all hooks
+  
+  // Show loading spinner while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show auth page if not authenticated
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
+  // Main app render
   return (
     <Layout view={view} onViewChange={setView}>
       {view === 'search' ? (
         <div className="space-y-6">
 
-          {/* Search bar - now supports browse mode */}
+          {/* Search bar */}
           <SearchBar 
             onSearch={handleSearch}
             loading={loading}
             hasQuery={!!searchQuery}
           />
 
-          {/* Filters - show when query exists or filters are active */}
+          {/* Filters */}
           {(searchQuery || Object.values(filters).some(value => value)) && (
             <Filters
               filters={filters}
@@ -165,6 +188,17 @@ function App() {
         />
       )}
     </Layout>
+  );
+}
+
+/**
+ * App Wrapper with Auth Provider
+ */
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
