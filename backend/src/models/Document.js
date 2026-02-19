@@ -83,10 +83,11 @@ const documentSchema = new mongoose.Schema({
     type: String
   },
 
-  // Uploaded by which user/system
+   // Uploaded by which user (reference to User model)
   uploadedBy: {
-    type: String,
-    default: 'System'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
   },
 
   // Timestamp when document was uploaded

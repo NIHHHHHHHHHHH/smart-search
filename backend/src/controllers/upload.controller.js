@@ -90,7 +90,7 @@ export const uploadDocument = async (req, res, next) => {
       tags: categorization.tags,
       summary: categorization.summary,
       embedding,
-      uploadedBy: req.body.uploadedBy || 'System'
+      uploadedBy: req.user ? req.user.id : null // Track user who uploaded
     });
 
     await document.save();

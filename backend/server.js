@@ -8,7 +8,9 @@ import rateLimit from 'express-rate-limit';
 import { connectDatabase } from './src/config/database.js';
 import uploadRoutes from './src/routes/upload.routes.js';
 import searchRoutes from './src/routes/search.routes.js';
+import authRoutes from './src/routes/auth.routes.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
+
 
 
 const app = express();
@@ -50,6 +52,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/search', searchRoutes);
 

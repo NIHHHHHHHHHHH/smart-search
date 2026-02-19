@@ -1,5 +1,6 @@
 import express from 'express';
 import { upload } from '../middleware/upload.middleware.js';
+import { authenticate } from '../middleware/auth.middleware.js';
 import { 
   uploadDocument, 
   getDocuments, 
@@ -20,7 +21,7 @@ const router = express.Router();
  * - Controller → uploadDocument
  * ---------------------------------------------------------
  */
-router.post('/', upload.single('file'), uploadDocument);
+router.post('/',authenticate, upload.single('file'), uploadDocument);
 
 /**
  * ---------------------------------------------------------
@@ -47,6 +48,6 @@ router.get('/:id', getDocument);
  * @access  Public (should be protected in final production)
  * ---------------------------------------------------------
  */
-router.delete('/:id', deleteDocument);
+router.delete('/:id',authenticate, deleteDocument);
 
 export default router;
