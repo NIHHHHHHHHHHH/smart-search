@@ -1,41 +1,41 @@
-
-
-
-
-
-
-
-
-
-
 import axios from 'axios';
 
 // Axios Instance Configuration
-// Creates a reusable axios client that automatically applies:
-//  - Base API URL (from environment variables)
-//  - Default headers
-//  - Response timeout
-//
-// This centralizes all API-related settings so the entire app
-// uses one consistent configuration.
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30s timeout for long-running operations like file uploads
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Axios Response Interceptor
-// Intercepts all API responses before they reach the UI.
-// If successful → return response.data directly.
-// If error → extract readable message and throw a clean error.
+// Request Interceptor - Add auth token to all requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response Interceptor - Handle errors and auto-logout on 401
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    // Handle unauthorized errors (expired/invalid token)
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/';
+    }
+
     const message = error.response?.data?.message || error.message || 'An error occurred';
     console.error('API Error:', message);
     throw new Error(message);
@@ -43,10 +43,6 @@ api.interceptors.response.use(
 );
 
 // File Upload API
-// uploadFile(file, onProgress)
-// - Sends a file to backend via POST /upload
-// - Supports progress tracking via onUploadProgress
-// - Returns response.data from server
 export const uploadFile = async (file, onProgress) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -58,8 +54,6 @@ export const uploadFile = async (file, onProgress) => {
         const percentCompleted = Math.round(
           (progressEvent.loaded * 100) / progressEvent.total
         );
-
-        // Callback to update upload progress in UI
         if (onProgress) onProgress(percentCompleted);
       }
     });
@@ -71,11 +65,6 @@ export const uploadFile = async (file, onProgress) => {
 };
 
 // Document APIs
-// getDocuments(params)
-// - Fetch list of uploaded documents (with optional filters)
-//
-// getDocumentById(id)
-// - Fetch a single uploaded document by ID
 export const getDocuments = async (params = {}) => {
   const response = await api.get('/upload', { params });
   return response.data;
@@ -87,15 +76,6 @@ export const getDocumentById = async (id) => {
 };
 
 // Search APIs
-// searchDocuments(query, filters)
-// - Performs semantic/full-text search across documents
-// - Dynamically removes empty filter values before sending
-//
-// getFilters()
-// - Fetches available filter metadata (categories, teams, projects)
-//
-// getStats()
-// - Fetches high-level analytics/statistics from the backend
 export const searchDocuments = async (query, filters = {}) => {
   const params = {
     q: query,
@@ -116,6 +96,37 @@ export const getFilters = async () => {
 export const getStats = async () => {
   const response = await api.get('/search/stats');
   return response.data;
+};
+
+// Auth APIs
+export const registerUser = async (userData) => {
+  const response = await api.post('/auth/register', userData);
+  return response;
+};
+
+export const loginUser = async (credentials) => {
+  const response = await api.post('/auth/login', credentials);
+  return response;
+};
+
+export const guestLogin = async () => {
+  const response = await api.post('/auth/guest');
+  return response;
+};
+
+export const getCurrentUser = async () => {
+  const response = await api.get('/auth/me');
+  return response;
+};
+
+export const updateUserProfile = async (data) => {
+  const response = await api.put('/auth/profile', data);
+  return response;
+};
+
+export const changeUserPassword = async (passwords) => {
+  const response = await api.put('/auth/password', passwords);
+  return response;
 };
 
 export default api;
