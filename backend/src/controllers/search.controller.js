@@ -1,7 +1,7 @@
 import Document from '../models/Document.js';
 import { createQueryEmbedding, cosineSimilarity } from '../services/embedding.service.js';
 
-// NEW: Get all documents (Browse mode)
+// Get all documents (Browse mode) - FILTER BY USER
 export const getAllDocuments = async (req, res, next) => {
   try {
     const { 
@@ -16,8 +16,11 @@ export const getAllDocuments = async (req, res, next) => {
 
     console.log('📚 Fetching all documents...');
 
-    // Build filter
-    const filter = {};
+    // CHANGE: Add user filter
+    const filter = {
+      uploadedBy: req.user.id  // ONLY current user's documents
+    };
+    
     if (category) filter.category = category;
     if (team) filter.team = team;
     if (project) filter.project = project;
@@ -45,7 +48,7 @@ export const getAllDocuments = async (req, res, next) => {
   }
 };
 
-// MODIFIED: Made query optional for hybrid search/browse
+// Search documents - FILTER BY USER
 export const searchDocuments = async (req, res, next) => {
   try {
     const { 
@@ -64,8 +67,11 @@ export const searchDocuments = async (req, res, next) => {
 
     console.log(`🔍 Searching for: "${query}"`);
 
-    // Build filter
-    const filter = {};
+    // CHANGE: Add user filter
+    const filter = {
+      uploadedBy: req.user.id  // ONLY current user's documents
+    };
+    
     if (category) filter.category = category;
     if (team) filter.team = team;
     if (project) filter.project = project;
@@ -151,11 +157,14 @@ export const searchDocuments = async (req, res, next) => {
 
 export const getFilters = async (req, res, next) => {
   try {
+    // CHANGE: Filter by current user
+    const userFilter = { uploadedBy: req.user.id };
+
     const [categories, teams, projects, fileTypes] = await Promise.all([
-      Document.distinct('category'),
-      Document.distinct('team'),
-      Document.distinct('project'),
-      Document.distinct('fileType')
+      Document.distinct('category', userFilter),
+      Document.distinct('team', userFilter),
+      Document.distinct('project', userFilter),
+      Document.distinct('fileType', userFilter)
     ]);
 
     res.json({
@@ -174,12 +183,16 @@ export const getFilters = async (req, res, next) => {
 
 export const getStats = async (req, res, next) => {
   try {
+    // CHANGE: Filter by current user
+    const userFilter = { uploadedBy: req.user.id };
+
     const [totalDocs, categoryStats, recentDocs] = await Promise.all([
-      Document.countDocuments(),
+      Document.countDocuments(userFilter),
       Document.aggregate([
+        { $match: userFilter },
         { $group: { _id: '$category', count: { $sum: 1 } } }
       ]),
-      Document.find()
+      Document.find(userFilter)
         .select('title uploadedAt')
         .sort({ uploadedAt: -1 })
         .limit(5)
@@ -197,8 +210,6 @@ export const getStats = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 
 
