@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+    <!-- background -->
+    <rect width="32" height="32" rx="8" fill="#f5b64e" />
+    <!-- search circle -->
+    <circle cx="14" cy="14" r="6" stroke="#0a0a0b" stroke-width="2.5" fill="none" />
+    <!-- search handle -->
+    <line x1="18.5" y1="18.5" x2="24" y2="24" stroke="#0a0a0b" stroke-width="2.5" stroke-linecap="round" />
+    <!-- document lines inside circle (subtle) -->
+    <line x1="11" y1="13" x2="17" y2="13" stroke="#0a0a0b" stroke-width="1.5" stroke-linecap="round" opacity="0.5" />
+    <line x1="11" y1="15.5" x2="15.5" y2="15.5" stroke="#0a0a0b" stroke-width="1.5" stroke-linecap="round"
+        opacity="0.5" />
+</svg>

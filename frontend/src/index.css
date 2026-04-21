@@ -1,24 +1,43 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 @import "tailwindcss";
 
+@theme {
+  /* colors */
+  --color-bg:           #0a0a0b;
+  --color-bg-elevated:  #111113;
+  --color-bg-raised:    #18181c;
+  --color-bg-overlay:   #1e1e24;
+
+  --color-border:       rgba(255,255,255,0.07);
+  --color-border-hover: rgba(255,255,255,0.14);
+
+  --color-accent:       #f5b64e;
+  --color-accent-dim:   rgba(245,182,78,0.12);
+  --color-accent-glow:  rgba(245,182,78,0.25);
+
+  --color-text-primary:   #f0ede8;
+  --color-text-secondary: rgba(240,237,232,0.55);
+  --color-text-tertiary:  rgba(240,237,232,0.3);
+
+  --color-success:    #4ade80;
+  --color-success-bg: rgba(74,222,128,0.1);
+  --color-error:      #f87171;
+  --color-error-bg:   rgba(248,113,113,0.1);
+  --color-warning:    #fbbf24;
+
+  /* fonts */
+  --font-display: 'Syne', sans-serif;
+  --font-body:    'DM Sans', sans-serif;
+
+}
 
 
+/* Base */
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
-}
