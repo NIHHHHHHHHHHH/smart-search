@@ -1,46 +1,48 @@
 import React, { useState } from 'react';
-import { Mail, Lock, AlertCircle, Loader, Users } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Users } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { loginUser, guestLogin } from '../../services/api';
+import { Button, FormField, ErrorBanner, TextInput } from '../ui';
 
-/**
- * Login Component
- * 
- * User login form with validation and error handling
- */
+
 const Login = ({ onToggleForm }) => {
   const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [guestLoading, setGuestLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [touched, setTouched] = useState({ email: false, password: false });
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    setError('');
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
+  };
+
+  const handleBlur = (e) => setTouched({ ...touched, [e.target.name]: true });
+
+  const getFieldError = (field) => {
+    if (!touched[field]) return '';
+    if (field === 'email' && formData.email && !/^\S+@\S+\.\S+$/.test(formData.email))
+      return 'Enter a valid email address';
+    if (field === 'password' && formData.password.length < 1)
+      return 'Password is required';
+    return '';
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setTouched({ email: true, password: true });
     setLoading(true);
-
     try {
-      if (!formData.email || !formData.password) {
-        throw new Error('Please fill in all fields');
-      }
-
+      if (!formData.email || !formData.password) throw new Error('Please fill in all fields');
       const response = await loginUser(formData);
       login(response.data);
-
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      setError(err.response?.data?.message || err.message || 'Invalid email or password.');
+      setFormData((prev) => ({ ...prev, password: '' }));
+      setTouched((prev) => ({ ...prev, password: false }));
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,6 @@ const Login = ({ onToggleForm }) => {
   const handleGuestLogin = async () => {
     setError('');
     setGuestLoading(true);
-
     try {
       const response = await guestLogin();
       login(response.data);
@@ -60,132 +61,74 @@ const Login = ({ onToggleForm }) => {
     }
   };
 
+  const isDisabled = loading || guestLoading;
+
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-          <p className="text-slate-600">Sign in to access your documents</p>
-        </div>
+    <div className="w-full bg-bg-elevated border border-border rounded-2xl p-8">
+      <h2 className="text-2xl font-bold text-text-primary tracking-tight mb-1">Welcome back</h2>
+      <p className="text-sm text-text-secondary mb-7">Sign in to your account and pick up right where you left off.</p>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
-        )}
+      <ErrorBanner message={error} />
 
-        {/* Login Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email Field */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="w-5 h-5 text-slate-400" />
-              </div>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                disabled={loading || guestLoading}
-                required
-              />
-            </div>
-          </div>
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+        <FormField label="Email address" error={getFieldError('email')}>
+          <TextInput
+            icon={Mail}
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="xyz@gmail.com"
+            disabled={isDisabled}
+            hasError={!!getFieldError('email')}
+          />
+        </FormField>
 
-          {/* Password Field */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="w-5 h-5 text-slate-400" />
-              </div>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                disabled={loading || guestLoading}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={loading || guestLoading}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center space-x-2"
-          >
-            {loading ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                <span>Signing in...</span>
-              </>
-            ) : (
-              <span>Sign In</span>
-            )}
-          </button>
-        </form>
-
-        {/* Divider */}
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-300"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-slate-500">Or</span>
-          </div>
-        </div>
-
-        {/* Guest Login Button */}
-        <button
-          onClick={handleGuestLogin}
-          disabled={loading || guestLoading}
-          className="w-full py-3 bg-linear-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center space-x-2 shadow-md hover:shadow-lg"
+        <FormField
+          label="Password"
+          error={getFieldError('password')}
+          rightLabel={<button type="button" className="text-[10px] text-accent hover:opacity-80 transition-opacity font-medium cursor-pointer">Forgot password?</button>}
         >
-          {guestLoading ? (
-            <>
-              <Loader className="w-5 h-5 animate-spin" />
-              <span>Loading demo...</span>
-            </>
-          ) : (
-            <>
-              <Users className="w-5 h-5" />
-              <span>Continue as Guest (Demo)</span>
-            </>
-          )}
-        </button>
+          <TextInput
+            icon={Lock}
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="••••••••"
+            disabled={isDisabled}
+            hasError={!!getFieldError('password')}
+            showToggle
+            showValue={showPassword}
+            onToggle={() => setShowPassword(!showPassword)}
+          />
+        </FormField>
 
-        <p className="text-xs text-center text-slate-500 mt-2">
-          Perfect for recruiters - explore instantly without signing up
-        </p>
+        <Button type="submit" variant="primary" fullWidth loading={loading} disabled={isDisabled} className="mt-1 cursor-pointer">
+          <span>Sign In to Workspace</span><ArrowRight size={14} />
+        </Button>
+      </form>
 
-        {/* Toggle to Register */}
-        <div className="mt-6 text-center">
-          <p className="text-slate-600">
-            Don't have an account?{' '}
-            <button
-              onClick={onToggleForm}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Create one
-            </button>
-          </p>
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="px-3 bg-bg-elevated text-[10px] font-semibold tracking-widest uppercase text-text-tertiary">or</span>
         </div>
       </div>
+
+      <Button className="cursor-pointer" variant="demo" fullWidth loading={guestLoading} disabled={isDisabled} onClick={handleGuestLogin}>
+        <Users size={15} /><span>Explore as Guest - No Sign Up Required</span>
+      </Button>
+
+      <p className="text-center text-sm text-text-tertiary mt-6">
+        New to Smart Search?{' '}
+        <button onClick={onToggleForm} className="text-accent font-semibold hover:opacity-80 transition-opacity cursor-pointer ml-2">
+          Create a free account
+        </button>
+      </p>
     </div>
   );
 };

@@ -4,3 +4,6 @@ export { default as CategoryChip } from './CategoryChip';
 export { default as FileTypeBadge } from './FileTypeBadge';
 export { default as Tag } from './Tag';
 export { default as EmptyState } from './EmptyState';
+export { default as TextInput } from './TextInput';
+export { default as FormField } from './FormField';
+export { default as ErrorBanner } from './ErrorBanner';

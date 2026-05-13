@@ -1,213 +1,179 @@
 import React, { useState } from 'react';
-import { User, Mail, Lock, AlertCircle, Loader, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, CheckCircle, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { registerUser } from '../../services/api';
+import { Button, FormField, ErrorBanner, TextInput } from '../ui';
 
-/**
- * Register Component
- * 
- * User registration form with validation
- */
+const strengthMeta = [
+  { label: '', color: 'bg-bg-overlay', text: 'text-text-tertiary' },
+  { label: 'Too weak — add more characters', color: 'bg-red-400', text: 'text-red-400' },
+  { label: 'Fair — try mixing in numbers', color: 'bg-amber-400', text: 'text-amber-400' },
+  { label: 'Good — almost there', color: 'bg-accent', text: 'text-accent' },
+  { label: 'Strong password', color: 'bg-emerald-400', text: 'text-emerald-400' },
+  { label: 'Excellent — rock solid', color: 'bg-emerald-400', text: 'text-emerald-400' },
+];
+
 const Register = ({ onToggleForm }) => {
   const { login } = useAuth();
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [touched, setTouched] = useState({});
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-    setError('');
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (error) setError('');
+  };
+
+  const handleBlur = (e) => setTouched({ ...touched, [e.target.name]: true });
+
+  const getFieldError = (field) => {
+    if (!touched[field]) return '';
+    switch (field) {
+      case 'name': return !formData.name ? 'Name is required' : formData.name.length < 2 ? 'At least 2 characters required' : '';
+      case 'email': return !formData.email ? 'Email is required' : !/^\S+@\S+\.\S+$/.test(formData.email) ? 'Enter a valid email address' : '';
+      case 'password': return !formData.password ? 'Password is required' : formData.password.length < 6 ? 'Minimum 6 characters required' : '';
+      case 'confirmPassword': return !formData.confirmPassword ? 'Please confirm your password' : formData.password !== formData.confirmPassword ? 'Passwords do not match' : '';
+      default: return '';
+    }
+  };
+
+  const getStrength = () => {
+    const p = formData.password;
+    if (!p) return 0;
+    let s = 0;
+    if (p.length >= 6) s++;
+    if (p.length >= 10) s++;
+    if (/[A-Z]/.test(p)) s++;
+    if (/[0-9]/.test(p)) s++;
+    if (/[^A-Za-z0-9]/.test(p)) s++;
+    return s;
   };
 
   const validateForm = () => {
-    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) {
-      throw new Error('Please fill in all fields');
-    }
-
-    if (formData.name.length < 2) {
-      throw new Error('Name must be at least 2 characters');
-    }
-
-    if (formData.password.length < 6) {
-      throw new Error('Password must be at least 6 characters');
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      throw new Error('Passwords do not match');
-    }
-
-    const emailRegex = /^\S+@\S+\.\S+$/;
-    if (!emailRegex.test(formData.email)) {
-      throw new Error('Please enter a valid email address');
-    }
+    if (!formData.name || !formData.email || !formData.password || !formData.confirmPassword) throw new Error('Please fill in all fields');
+    if (formData.name.length < 2) throw new Error('Name must be at least 2 characters');
+    if (formData.password.length < 6) throw new Error('Password must be at least 6 characters');
+    if (formData.password !== formData.confirmPassword) throw new Error('Passwords do not match');
+    if (!/^\S+@\S+\.\S+$/.test(formData.email)) throw new Error('Please enter a valid email address');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setTouched({ name: true, email: true, password: true, confirmPassword: true });
     setLoading(true);
-
     try {
       validateForm();
-
       const { confirmPassword, ...registrationData } = formData;
       const response = await registerUser(registrationData);
-
       login(response.data);
-
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(err.response?.data?.message || err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  const strength = getStrength();
+  const sm = strengthMeta[strength];
+  const passwordsMatch = formData.confirmPassword && formData.password === formData.confirmPassword;
+
   return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-slate-900 mb-2">Create Account</h2>
-          <p className="text-slate-600">Join us to start managing your documents</p>
-        </div>
+    <div className="w-full bg-bg-elevated border border-border rounded-2xl p-8">
+      <h2 className="text-2xl font-bold text-text-primary tracking-tight mb-1">Start for free</h2>
+      <p className="text-sm text-text-secondary mb-7">Set up your account in seconds. No credit card required.</p>
 
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
-        )}
+      <ErrorBanner message={error} />
 
-        {/* Register Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Name Field */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Full Name
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <User className="w-5 h-5 text-slate-400" />
-              </div>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="John Doe"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
 
-          {/* Email Field */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Email Address
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Mail className="w-5 h-5 text-slate-400" />
-              </div>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Password Field */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Lock className="w-5 h-5 text-slate-400" />
-              </div>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                disabled={loading}
-                required
-              />
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Minimum 6 characters</p>
-          </div>
-
-          {/* Confirm Password Field */}
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <CheckCircle className="w-5 h-5 text-slate-400" />
-              </div>
-              <input
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="••••••••"
-                className="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                disabled={loading}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
+        <FormField label="Full name" error={getFieldError('name')}>
+          <TextInput
+            icon={User}
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="Jane Smith"
             disabled={loading}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-all font-medium flex items-center justify-center space-x-2"
-          >
-            {loading ? (
-              <>
-                <Loader className="w-5 h-5 animate-spin" />
-                <span>Creating account...</span>
-              </>
-            ) : (
-              <span>Create Account</span>
-            )}
-          </button>
-        </form>
+            hasError={!!getFieldError('name')}
+          />
+        </FormField>
 
-        {/* Toggle to Login */}
-        <div className="mt-6 text-center">
-          <p className="text-slate-600">
-            Already have an account?{' '}
-            <button
-              onClick={onToggleForm}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              Sign in
-            </button>
-          </p>
-        </div>
-      </div>
+        <FormField label="Email address" error={getFieldError('email')}>
+          <TextInput
+            icon={Mail}
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="xyz@gmail.com"
+            disabled={loading}
+            hasError={!!getFieldError('email')}
+          />
+        </FormField>
+
+        <FormField label="Create a password" error={getFieldError('password')}>
+          <TextInput
+            icon={Lock}
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="Min. 6 characters"
+            disabled={loading}
+            hasError={!!getFieldError('password')}
+            showToggle
+            showValue={showPassword}
+            onToggle={() => setShowPassword(!showPassword)}
+          />
+          {formData.password && (
+            <div className="mt-2">
+              <div className="flex gap-1 mb-1">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className={`h-0.5 flex-1 rounded-full transition-all duration-300 ${i <= strength ? sm.color : 'bg-bg-overlay'}`} />
+                ))}
+              </div>
+              <p className={`text-[11px] ${sm.text}`}>{sm.label}</p>
+            </div>
+          )}
+        </FormField>
+
+        <FormField label="Confirm password" error={getFieldError('confirmPassword')}>
+          <TextInput
+            icon={passwordsMatch ? CheckCircle : Lock}
+            iconClassName={passwordsMatch ? 'text-emerald-400' : undefined}
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            placeholder="Re-enter your password"
+            disabled={loading}
+            hasError={!!getFieldError('confirmPassword')}
+            showToggle
+            showValue={showConfirm}
+            onToggle={() => setShowConfirm(!showConfirm)}
+            extraBorderClass={passwordsMatch ? 'border-emerald-500/30!' : ''}
+          />
+        </FormField>
+
+        <Button type="submit" variant="primary" fullWidth loading={loading} className="mt-1 cursor-pointer">
+          <span>Create Free Account</span><ArrowRight size={14} />
+        </Button>
+
+      </form>
+
+      <p className="text-center text-sm text-text-tertiary mt-6">
+        Already have an account?{' '}
+        <button onClick={onToggleForm} className="text-accent font-semibold hover:opacity-80 transition-opacity cursor-pointer ml-2">
+          Sign in
+        </button>
+      </p>
     </div>
   );
 };
