@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { FileSearch, Zap, Shield, Sparkles, Lock, Star } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { guestLogin } from '../../services/api';
-import { Button } from '../ui';
+import { FileSearch, Zap, Shield, Sparkles, ArrowLeft } from 'lucide-react';
 import Login from './Login';
 import Register from './Register';
 
@@ -29,11 +26,10 @@ const features = [
   },
 ];
 
+const AuthPage = ({ initialLogin = true, onBack }) => {
 
-const AuthPage = () => {
+  const [isLogin, setIsLogin] = useState(initialLogin);
 
-  const [isLogin, setIsLogin] = useState(true);
- 
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4 relative overflow-hidden">
 
@@ -41,8 +37,7 @@ const AuthPage = () => {
       <div className="absolute -bottom-20 -right-10 w-80 h-80 rounded-full bg-purple-500/5 blur-[80px] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-5xl grid lg:grid-cols-2 gap-12 items-center">
-
-        <div className="hidden lg:flex flex-col gap-9  animate-[fadeUp_0.4s_cubic-bezier(0.16,1,0.3,1)_both]">
+        <div className="hidden lg:flex flex-col gap-9 animate-[fadeUp_0.4s_cubic-bezier(0.16,1,0.3,1)_both]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-accent shadow-[0_0_20px_var(--color-accent-glow)] animate-[float_3s_ease-in-out_infinite]">
               <FileSearch size={18} color="#0a0a0b" strokeWidth={2.5} />
@@ -52,12 +47,15 @@ const AuthPage = () => {
 
           <div>
             <h1 className="text-5xl font-extrabold text-text-primary leading-none tracking-tight mb-4">
-              Your docs,
-              <span className="bg-linear-to-r from-accent to-amber-300 bg-clip-text text-transparent">intelligently</span>
-              <br />organized. </h1>
+              Your docs,{' '}
+              <span className="bg-linear-to-r from-accent to-amber-300 bg-clip-text text-transparent">
+                intelligently
+              </span>
+              <br />organized.
+            </h1>
             <p className="text-base text-text-secondary leading-relaxed max-w-md">
               Stop wasting hours digging through folders. Smart Search uses AI to automatically
-              classify, tag, and surface your documents - so your team finds the right file
+              classify, tag, and surface your documents — so your team finds the right file
               in seconds, every time.
             </p>
           </div>
@@ -75,11 +73,11 @@ const AuthPage = () => {
               </div>
             ))}
           </div>
-
         </div>
 
         <div className="animate-[fadeUp_0.4s_cubic-bezier(0.16,1,0.3,1)_0.1s_both]">
-          <div className="flex lg:hidden items-center  gap-2 mb-8">
+
+          <div className="flex lg:hidden items-center gap-2 mb-8">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-accent">
               <FileSearch size={15} color="#0a0a0b" />
             </div>
@@ -88,12 +86,14 @@ const AuthPage = () => {
             </span>
           </div>
 
-          {isLogin
-            ? <Login onToggleForm={() => setIsLogin(false)} />
-            : <Register onToggleForm={() => setIsLogin(true)} />
-          }
-        </div>
+           <button onClick={onBack}className="flex items-center gap-1.5 text-sm text-text-secondary hover:text-text-primary transition-colors mb-6 cursor-pointer">
+             <ArrowLeft size={16} />
+                Back to home
+             </button>
 
+          {isLogin ? <Login onToggleForm={() => setIsLogin(false)} /> : <Register onToggleForm={() => setIsLogin(true)}  />}
+
+        </div>
       </div>
     </div>
   );
