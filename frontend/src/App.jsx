@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthPage from './components/Auth/AuthPage';
-import Layout from './components/Layout';
-import SearchBar from './components/SearchBar';
-import FileUpload from './components/FileUpload';
-import SearchResults from './components/SearchResults';
-import Filters from './components/Filters';
-import FilePreview from './components/FilePreview';
+import Layout from './components/layout/Layout';
+import SearchBar from './components/search/SearchBar';
+import FileUpload from './components/files/FileUpload';
+import SearchResults from './components/search/SearchResults';
+import Filters from './components/search/Filters';
+import FilePreview from './components/files/FilePreview';
 import { searchDocuments, getFilters } from './services/api';
 
 /**

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Upload, CloudUpload, Check, X, AlertCircle, Zap, Tag, Shield, FileText, Bot, Tags } from 'lucide-react';
-import { uploadFile } from '../services/api';
+import { uploadFile } from '../../services/api';
 
 /**
  * FileUpload Component
