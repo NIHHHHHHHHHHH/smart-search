@@ -1,75 +1,82 @@
-import React from 'react';
-import { Search, Upload, FileSearch } from 'lucide-react';
-import UserMenu from './UserMenu';
+import React, { useState } from 'react';
+import { Search, Upload, FileSearch, Menu, X } from 'lucide-react';
+import UserMenu from '../layout/UserMenu';
+import { Button } from '../ui';
 
-/**
- * Layout Component
- * 
- * Main app shell with header, navigation, and content area
- * UPDATED: Now includes UserMenu in header
- */
 const Layout = ({ children, view, onViewChange }) => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const navItems = [
+    { id: 'search', label: 'Search', Icon: Search },
+    { id: 'upload', label: 'Upload', Icon: Upload },
+  ];
+
+  const handleNavChange = (id) => {
+    onViewChange(id);
+    setMobileMenuOpen(false);
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo/Brand */}
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-linear-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-                <FileSearch className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Smart Search</h1>
-                <p className="text-xs text-slate-500">AI-Powered Document Search</p>
-              </div>
+    <div className="min-h-screen bg-bg text-text-primary flex flex-col">
+
+      <div className="fixed -top-40 -left-20 w-[600px] h-[600px] rounded-full pointer-events-none z-0 bg-accent-subtle blur-[120px]" />
+      <div className="fixed -bottom-20 -right-10 w-96 h-96 rounded-full pointer-events-none z-0 bg-purple-bg blur-[100px]" />
+
+      <header className="border-b border-border sticky top-0 z-40 backdrop-blur-xl bg-[rgba(10,10,11,0.80)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center bg-accent shadow-[0_0_20px_var(--color-accent-glow)]">
+              <FileSearch size={15} color="#0a0a0b" strokeWidth={2.5} />
             </div>
+            <h1 className="text-sm sm:text-base font-bold text-text-primary whitespace-nowrap">Smart Search </h1>
+          </div>
 
-            {/* Navigation + User Menu */}
-            <div className="flex items-center space-x-4">
-              {/* Navigation Tabs */}
-              <nav className="flex space-x-2 bg-slate-100 rounded-lg p-1">
-                <button
-                  onClick={() => onViewChange('search')}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
-                    view === 'search'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Search className="w-4 h-4" />
-                  <span className="font-medium">Search</span>
-                </button>
+          <nav className="hidden sm:flex gap-3 rounded-xl p-1">
+            {navItems.map(({ id, label, Icon }) => {
+              const active = view === id;
+              return (
+                <Button  key={id}  variant={active ? 'primary' : 'secondary'}  size="md"  onClick={() => onViewChange(id)}  className="cursor-pointer">
+                  <Icon size={14} className="text-inherit" />
+                  <span className="text-base">{label}</span>
+                </Button>
+              );
+            })}
+          </nav>
 
-                <button
-                  onClick={() => onViewChange('upload')}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-md transition-all ${
-                    view === 'upload'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <Upload className="w-4 h-4" />
-                  <span className="font-medium">Upload</span>
-                </button>
-              </nav>
+          <div className="flex items-center gap-2">
+            <UserMenu />
 
-              {/* User Menu */}
-              <UserMenu />
-            </div>
+            <button
+              className="sm:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-bg-raised text-text-secondary transition-colors"
+              onClick={() => setMobileMenuOpen((v) => !v)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X size={16} /> : <Menu size={16} />}
+            </button>
           </div>
         </div>
+
+        {mobileMenuOpen && (
+          <div className="sm:hidden border-t border-border bg-bg-elevated px-4 py-3 flex flex-col gap-2 animate:[ssfadeUp_0.15s_cubic-bezier(0.16,1,0.3,1)_both]">
+            {navItems.map(({ id, label, Icon }) => {
+              const active = view === id;
+              return (
+                <Button  key={id}  variant={active ? 'primary' : 'secondary'}  size="md"  fullWidth  onClick={() => handleNavChange(id)}  className="cursor-pointer justify-start">
+                  <Icon size={15} className="text-inherit" />
+                  <span className="text-sm">{label}</span>
+                </Button>
+              );
+            })}
+          </div>
+        )}
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-5 sm:py-8 flex-1 w-full">
         {children}
       </main>
 
-      {/* Footer */}
-      <footer className="mt-auto py-6 text-center text-slate-500 text-sm">
-        <p>&copy; 2024 Smart Search. Powered by AI.</p>
+      <footer className="relative z-10 mt-auto py-5 sm:py-6 text-center border-t border-border px-4">
+        <p className="text-sm text-text-secondary">© {new Date().getFullYear()} Smart Search. All Rights Reserved.</p>
       </footer>
     </div>
   );
