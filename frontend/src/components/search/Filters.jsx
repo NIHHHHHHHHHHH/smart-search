@@ -1,146 +1,73 @@
 import React from 'react';
-import { Filter, X } from "lucide-react";
+import { Filter, X, ChevronDown } from 'lucide-react';
 
-/**
- * Filters Component
- * Displays a filter panel allowing users to refine search results by:
- *  - Category
- *  - Team
- *  - Project
- *  - File Type
- *
- * Props:
- *  - filters: Current filter values (category, team, project, fileType)
- *  - availableFilters: Lists of available filter options from backend
- *  - onFilterChange: Callback invoked whenever filters are updated
+const filterFields = [
+  { key: 'category', label: 'Category', placeholder: 'All Categories', optKey: 'categories' },
+  { key: 'team', label: 'Team', placeholder: 'All Teams', optKey: 'teams' },
+  { key: 'project', label: 'Project',  placeholder: 'All Projects', optKey: 'projects' },
+  { key: 'fileType', label: 'File Type', placeholder: 'All Types', optKey: 'fileTypes', upper: true },
+];
 
- *  - Updates filters when a user selects a new value
- *  - Provides a "Clear all" action when any filter is active
- *  - Uses Lucide icons for visual clarity
- */
 const Filters = ({ filters, availableFilters, onFilterChange }) => {
+  const handleFilterChange = (key, value) => onFilterChange({ ...filters, [key]: value });
+  const handleClearFilters = () =>
+    onFilterChange({ category: '', team: '', project: '', fileType: '' });
 
-  /**
-   * handleFilterChange
-   * Updates a specific filter key (e.g., category, team) and
-   * triggers the parent callback with the updated filters object.
-   */
-  const handleFilterChange = (key, value) => {
-    onFilterChange({
-      ...filters,
-      [key]: value
-    });
-  };
-
-  /**
-   * handleClearFilters
-   * Resets all filter values back to empty.
-   * Useful when the user wants to see unfiltered search results.
-   */
-  const handleClearFilters = () => {
-    onFilterChange({
-      category: '',
-      team: '',
-      project: '',
-      fileType: ''
-    });
-  };
-
-  // Checks if any filter has a value — used to show/hide "Clear all"
   const hasActiveFilters = Object.values(filters).some(v => v !== '');
+  const activeCount = Object.values(filters).filter(v => v !== '').length;
 
   return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+    <div className="relative rounded-2xl p-5 overflow-hidden border border-border bg-bg-elevated">
+      {hasActiveFilters && (
+        <div className="absolute top-0 left-0 right-0 h-px bg-[linear-gradient(90deg,transparent,var(--color-accent),transparent)]" />
+      )}
 
-      {/* Header section with Filters title and Clear button */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-slate-900 flex items-center space-x-2">
-          <Filter className="w-5 h-5" />
-          <span>Filters</span>
-        </h3>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center border border-border bg-bg-raised text-text-secondary">
+            <Filter size={13} />
+          </div>
+          <span className="text-base font-semibold text-text-primary">Filters</span>
+          {hasActiveFilters && (
+            <span className="px-2 py-0.5 text-sm font-bold rounded-full border bg-accent-dim text-accent border-accent-glow">{activeCount} Active</span>
+          )}
+        </div>
 
         {hasActiveFilters && (
-          <button
-            onClick={handleClearFilters}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-          >
-            <X className="w-4 h-4" />
-            Clear all
+          <button onClick={handleClearFilters}  className="flex items-center gap-1.5 text-sm transition-colors cursor-pointer text-text-secondary hover:text-text-primary" >
+            <X size={14} /> Clear all
           </button>
         )}
       </div>
 
-      {/* Grid container for all dropdown filters */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        {filterFields.map(({ key, label, placeholder, optKey, upper }) => {
+          const isActive = filters[key] !== '';
+          return (
+            <div key={key}>
+              <label className="block text-sm font-semibold uppercase tracking-widest mb-1.5 text-text-secondary">{label}</label>
+              <div className="relative">
+                <select
+                  value={filters[key]} onChange={(e) => handleFilterChange(key, e.target.value)}
+                  className={`w-full px-3 py-2.5 text-sm rounded-xl outline-none appearance-none cursor-pointer transition-all duration-150 bg-bg-raised
+                    ${isActive
+                      ? 'border border-accent-glow text-accent'
+                      : 'border border-border text-text-primary'
+                    }`}
+                >
+                  <option value="" className="bg-bg-raised text-text-secondary">{placeholder}</option>
+                  {availableFilters[optKey]?.map((opt) => (
+                    <option key={opt} value={opt} className="bg-bg-raised text-text-primary">{upper ? opt.toUpperCase() : opt}</option>
+                  ))}
+                </select>
 
-        {/* Category Filter */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Category
-          </label>
-          <select
-            value={filters.category}
-            onChange={(e) => handleFilterChange('category', e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white"
-          >
-            <option value="">All Categories</option>
-            {availableFilters.categories?.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Team Filter */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Team
-          </label>
-          <select
-            value={filters.team}
-            onChange={(e) => handleFilterChange('team', e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white"
-          >
-            <option value="">All Teams</option>
-            {availableFilters.teams?.map((team) => (
-              <option key={team} value={team}>{team}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* Project Filter */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Project
-          </label>
-          <select
-            value={filters.project}
-            onChange={(e) => handleFilterChange('project', e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white"
-          >
-            <option value="">All Projects</option>
-            {availableFilters.projects?.map((proj) => (
-              <option key={proj} value={proj}>{proj}</option>
-            ))}
-          </select>
-        </div>
-
-        {/* File Type Filter */}
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            File Type
-          </label>
-          <select
-            value={filters.fileType}
-            onChange={(e) => handleFilterChange('fileType', e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white"
-          >
-            <option value="">All Types</option>
-            {availableFilters.fileTypes?.map((type) => (
-              <option key={type} value={type}>{type.toUpperCase()}</option>
-            ))}
-          </select>
-        </div>
-
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-text-secondary">
+                   <ChevronDown size={16} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
