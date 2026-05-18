@@ -1,57 +1,19 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
-/**
- * Load Gemini API Key
- * If GEMINI_API_KEY is missing, the application will still run
- * but AI-powered features (categorization, embedding, summary)
- * will be disabled. A warning is logged for developers.
- */
 if (!process.env.GEMINI_API_KEY) {
-  console.warn('⚠️  GEMINI_API_KEY not found. AI features will be disabled.');
+  console.warn('GEMINI_API_KEY not found. AI features will be disabled.');
 }
 
-/**
- * Initialize Google Generative AI Client
- * If API key is missing, a dummy key is used to prevent
- * runtime crashes — though API calls will fail gracefully.
- */
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy-key');
+// genai SDK needed for embeddings - generateAI doesn't support embedContent
+const genAINew = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'dummy-key', httpOptions: { apiVersion: 'v1' } });
 
-/**
- * Gemini Model: Text Generation & Categorization
- * Used for tasks such as:
- * - Content categorization
- * - Summarization
- * - Generating meaningful tags
- * - Extracting context from documents
- */
 export const geminiModel = genAI.getGenerativeModel({ 
+  // 2.5-flash has better reasoning for search relevance scoring
   model: 'gemini-2.5-flash' 
 });
 
-/**
- * Gemini Embedding Model
- * Used to convert document text → numerical vector embeddings.
- * These embeddings help with:
- * - Semantic search
- * - Similarity ranking
- * - AI-powered document lookup
- */
-export const embeddingModel = genAI.getGenerativeModel({ 
-  model: 'text-embedding-004' 
-});
-
-/**
- * generateText(prompt)
- * Sends a text prompt to Gemini and returns the generated text.
- *
- * @param {string} prompt – Natural language prompt or query.
- * @returns {Promise<string>} – Generated AI response.
- *
- * Error handling:
- * - Logs failure
- * - Re-throws error for controller-level handling
- */
 export const generateText = async (prompt) => {
   try {
     const result = await geminiModel.generateContent(prompt);
@@ -63,25 +25,13 @@ export const generateText = async (prompt) => {
   }
 };
 
-/**
- * generateEmbedding(text)
- * Converts raw text into embedding array (vector of numbers).
- *
- * @param {string} text – Document content to embed.
- * @returns {Promise<number[]>} – Embedding values for DB storage.
- *
- * Used for:
- * - Semantic search
- * - Similarity scoring
- *
- * Error handling:
- * - Logs failure
- * - Re-throws error for controller-level handling
- */
 export const generateEmbedding = async (text) => {
   try {
-    const result = await embeddingModel.embedContent(text);
-    return result.embedding.values;
+    const result = await genAINew.models.embedContent({
+      model: 'gemini-embedding-001',
+      contents: text,
+    });
+    return result.embeddings[0].values;
   } catch (error) {
     console.error('Embedding generation error:', error);
     throw error;
